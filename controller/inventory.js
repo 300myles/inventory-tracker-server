@@ -55,7 +55,7 @@ export const getDashboardStats = catchAsyncErrors(async (req, res, next) => {
 // Get all inventory items
 export const getAllInventory = catchAsyncErrors(async (req, res, next) => {
   const page = Number.parseInt(req.query.page) || 1;
-  const limit = Number.parseInt(req.query.limit) || 10;
+  const limit = Number.parseInt(req.query.limit) || 50;
   const skip = (page - 1) * limit;
 
   const filter = {};
