@@ -4,6 +4,7 @@ import sendMail from "../utils/sendMail.js";
 import catchAsyncErrors from "../middleware/catchAsyncErrors.js";
 import ErrorHandler from "../utils/ErrorHandler.js";
 import { isAuthenticated, requireSuperAdmin } from "../middleware/auth.js";
+import { startBot } from "../utils/WhatsAppBot.js";
 
 function generateOTP(length = 6) {
   const chars = "0123456789";
@@ -54,10 +55,10 @@ export const loginAdmin = catchAsyncErrors(async (req, res, next) => {
   const token = admin.getJwtToken();
 
   const options = {
-    expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
     httpOnly: false,
-    sameSite: "None",
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
   };
 
   res
@@ -89,15 +90,35 @@ export const getAllAdmins = [
   }),
 ];
 
+// Start whatapp bot
+export const startWhatsAppBot = [
+  isAuthenticated,
+  requireSuperAdmin,
+  catchAsyncErrors(async (req, res, next) => {
+    // Logic to start WhatsApp bot
+    // Assuming startBot is a function that starts the bot
+    try {
+      await startBot(); // Replace with actual function to start the bot
+      res.status(200).json({
+        success: true,
+        message: "WhatsApp bot started successfully",
+      });
+    } catch (error) {
+      return next(new ErrorHandler("Failed to start WhatsApp bot", 500));
+    }
+  }),
+]
+
 // Create new admin (Super admin only)
 export const createAdmin = [
   isAuthenticated,
   requireSuperAdmin,
-  catchAsyncErrors(async (req, res, next) => {
-    const { email, password, role = "admin" } = req.body;
+  catchAsyncErrors
+  (async (req, res, next) => {
+    const { email, password, role = "admin", phone } = req.body;
 
-    if (!email || !password) {
-      return next(new ErrorHandler("Please provide email and password", 400));
+    if (!email || !phone) {
+      return next(new ErrorHandler("Please provide email and phone number", 400));
     }
 
     // Convert email to lowercase
@@ -120,9 +141,10 @@ export const createAdmin = [
     // Create new admin with email as password initially
     const newAdmin = new Admin({
       email: stringEmail,
-      password: email, // Password is set to email initially
+      password: password || email, // Password is set to email if password is not provided
       role,
       isVerified: true, // Auto-verify admin accounts
+      phone: Number(phone)
     });
 
     await newAdmin.save();
@@ -136,6 +158,7 @@ export const createAdmin = [
         email: newAdmin.email,
         role: newAdmin.role,
         isVerified: newAdmin.isVerified,
+        phone: newAdmin.phone
       },
     });
   }),

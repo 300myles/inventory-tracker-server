@@ -6,6 +6,10 @@ import passport from "passport";
 import cookieParser from "cookie-parser";
 import admin from "./routes/admin.js";
 import inventory from "./routes/inventory.js";
+import whatsappbot from "./routes/whatsappbot.js";
+import { startBot } from "./utils/WhatsAppBot.js";
+import { createAdmin } from "./controller/admin.js";
+import inventoryHistoryRoutes from "./routes/inventoryHistory.js";
 
 
 export const app = express();
@@ -50,11 +54,8 @@ app.use(
 // Routes
 app.use("/api/admin", admin);
 app.use("/api/inventory", inventory);
-
-
-app.get("/test", (req, res) => {
-  res.send("Hello world!");
-});
+app.use("/api/inventory-history", inventoryHistoryRoutes);
+app.use("/api/whatsappbot", whatsappbot);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

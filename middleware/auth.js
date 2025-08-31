@@ -35,7 +35,7 @@ export const authenticateAdmin = (req, res, next) => {
       // Generate JWT token
       const token = admin.getJwtToken()
 
-      res.cookie("u_token", token, {
+      res.cookie("admin_token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -58,9 +58,7 @@ export const authenticateAdmin = (req, res, next) => {
 }
 
 export const isAuthenticated = catchAsyncErrors(async (req, res, next) => {
-  const token = req.cookies.u_token
-
-  console.log(token)
+  const token = req.cookies["admin_token"]
 
   if (!token) {
     return next(new ErrorHandler("Please login to continue", 401))

@@ -25,7 +25,7 @@ router.post("/reset-password", resetPassword)
 router.put("/change-password", changePassword)
 
 // Admin management routes
-router.get("/get-admin", getAdmin)
+router.get("/", getAdmin)
 router.get("/get-all-admins", getAllAdmins)
 router.post("/create-admin", createAdmin)
 router.delete("/delete-admin/:id", deleteAdmin)

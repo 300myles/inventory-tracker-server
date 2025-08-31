@@ -31,10 +31,6 @@ const inventorySchema = new mongoose.Schema(
       default: 1,
       min: [0, "Quantity cannot be negative"],
     },
-    sold: {
-      type: Boolean,
-      default: false,
-    },
     inStock: {
       type: Boolean,
       default: true,
@@ -50,21 +46,9 @@ const inventorySchema = new mongoose.Schema(
         trim: true,
       },
     ],
-    condition: {
-      type: String,
-      enum: ["new", "used", "refurbished"],
-      default: "new",
-    },
     dateAdded: {
       type: Date,
       default: Date.now,
-    },
-    dateSold: {
-      type: Date,
-    },
-    soldBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Admin",
     },
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -75,13 +59,9 @@ const inventorySchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Pre-save middleware to update sold status and date
+// Pre-save middleware to update inStock status
 inventorySchema.pre("save", function (next) {
-  if (this.isModified("sold") && this.sold) {
-    this.dateSold = new Date()
-    this.inStock = false
-  } else if (this.isModified("sold") && !this.sold) {
-    this.dateSold = undefined
+  if (this.isModified("inStock") && this.inStock) {
     this.inStock = this.quantity > 0
   }
   next()
@@ -92,18 +72,25 @@ inventorySchema.methods.getImageUrl = function () {
   return `/uploads/inventory/${this.image}`
 }
 
-// Method to mark as sold
-inventorySchema.methods.markAsSold = function (soldBy) {
-  this.sold = true
-  this.soldBy = soldBy
-  this.dateSold = new Date()
-  this.inStock = false
+// Method to reduce quantity
+inventorySchema.methods.reduceStock = function (qty) {
+  if (qty <= 0) throw new Error("Quantity must be greater than 0")
+  if (this.quantity < qty) throw new Error("Not enough stock available")
+
+  this.quantity -= qty
+
+  // if stock is empty, mark as out of stock
+  if (this.quantity <= 0) {
+    this.inStock = false
+  }
+
   return this.save()
 }
 
+
 // Static method to get available inventory
 inventorySchema.statics.getAvailableInventory = function () {
-  return this.find({ sold: false, inStock: true })
+  return this.find({ inStock: true })
 }
 
 export const Inventory = mongoose.model("Inventory", inventorySchema)
